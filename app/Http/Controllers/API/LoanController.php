@@ -10,16 +10,26 @@ use App\Models\LoanPayment;
 use Validator;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
-
+use App\Interfaces\LoanRepositoryInterface;
+use App\Interfaces\LoanPaymentRepositoryInterface;
 
 class LoanController extends BaseController
 {
+
+    private LoanRepositoryInterface $loanRepository;
+    private LoanPaymentRepositoryInterface $loanPaymentRepository;
+
+    public function __construct(LoanRepositoryInterface $loanRepository,LoanPaymentRepositoryInterface $loanPaymentRepository) 
+    {
+        $this->loanRepository = $loanRepository;
+        $this->loanPaymentRepository = $loanPaymentRepository;
+    }
     /**
       * Responds to requests to GET /loan/all
    */
     public function index()
     {
-        $loans = Loan::all()->where('user_id',Auth::User()->id);
+        $loans=$this->loanRepository->getAll();
         return $this->handleResponse(LoanResource::collection($loans), 'Loans have been retrieved!');
     }
    
@@ -40,35 +50,30 @@ class LoanController extends BaseController
         if($validator->fails()){
             return $this->handleError($validator->errors());       
         }
-        $loan = Loan::create($input);
 
-        $loan_id=$loan->id;
+        $loan=$this->loanRepository->createLoan($input);
+       
         //create weekly loan payments
         if($loan){
-            $repaymentAmount=$input['amount']/$input['term'];
-            $i=1;
-            $termPaymentAmount=[];
-            $totalRepayment=0;
-            while($i<=$input['term']){
-                $termPaymentAmount[$i]= round($repaymentAmount,5);
-                $totalRepayment +=$termPaymentAmount[$i];
-                $i++;
+            $termPaymentAmount=$this->loanRepository->calculateRepaymentAmount($loan->id);
+            if($termPaymentAmount != FALSE){
+                $days=7;
+                foreach($termPaymentAmount as $key=>$term_payment){
+    
+                    $daysToAdd=$days*$key;
+                    $currentDateTime = Carbon::now();
+                    $newDateTime = Carbon::now()->addDays($daysToAdd)->toDateString ();
+             
+                    $data['amount']=$term_payment;
+                    $data['status']=0;
+                    $data['payment_date']= $newDateTime;
+                    $data['loan_id']=$loan->id; 
+                    $loanPayment =$this->loanPaymentRepository->createLoanPayment($data);
+                }
+            } else{
+                return $this->handleError('Loan not found!');
             }
-            $replaymmentLeft=$input['amount']-$totalRepayment;
-          
-            $termPaymentAmount[$loan->term]=$replaymmentLeft+$termPaymentAmount[ $loan->term];
-            $days=7;
-            foreach($termPaymentAmount as $key=>$term_payment){
-                $daysToAdd=$days*$key;
-                $currentDateTime = Carbon::now();
-                $newDateTime = Carbon::now()->addDays($daysToAdd)->toDateString ();
-         
-                $data['amount']=$term_payment;
-                $data['status']=0;
-                $data['payment_date']= $newDateTime;
-                $data['loan_id']=$loan_id; 
-                $loanPayment = LoanPayment::create($data);
-            }
+            
 
 
 
@@ -81,7 +86,7 @@ class LoanController extends BaseController
    */
     public function show($id)
     {
-        $loan = Loan::find($id);
+        $loan = $this->loanRepository->getLoanById($id);
         
         if (is_null($loan)) {
             return $this->handleError('Loan not found!');
@@ -99,6 +104,7 @@ class LoanController extends BaseController
    */
     public function update(Request $request,$id)
     {
+       
         if(Auth::User()->is_admin  ==1){
             $input = $request->all();
             $validator = Validator::make($input, [
@@ -108,11 +114,14 @@ class LoanController extends BaseController
             if($validator->fails()){
                 return $this->handleError($validator->errors());       
             }
-            $loan = Loan::find($id);
-            $loan->status = $input['status'];
-            $loan->save();
-        
-            return $this->handleResponse(new LoanResource($loan), 'Loan successfully updated!');
+
+            $loan=$this->loanRepository->updateLoan($id,['status'=>$input['status']]);
+            if( $loan){
+                return $this->handleResponse(new LoanResource($loan), 'Loan successfully updated!');
+            } else{
+                return $this->handleError('Something went wrong, please try again.');   
+            }
+           
         } else{
             return $this->handleError('You dont have access to this route');       
 
@@ -132,16 +141,18 @@ class LoanController extends BaseController
         if($validator->fails()){
             return $this->handleError($validator->errors());       
         }
-        $loan = Loan::find($id);
-        $loanPayment = LoanPayment::where('loan_id', $id)->where('status',0)->first();
+        $loan = $this->loanRepository->getLoanById($id);
+        
+        if (is_null($loan)) {
+            return $this->handleError('Loan not found!');
+        }
+        $loanPayment = $this->loanPaymentRepository->getfirstPendingRecord($id);
         if($loanPayment){
             if($input['amount']>= $loanPayment->amount){
-                $loanPayment->status = 1;
-                $loanPayment->save();
-                $UnpaidloanPayment = LoanPayment::where('loan_id',$id)->where('status',0)->count();
+                $loanPayment = $this->loanPaymentRepository->markPaid($loanPayment->id);
+                $UnpaidloanPayment = $this->loanPaymentRepository->getUnpaid($id);
                 if($UnpaidloanPayment ==0){
-                    $loan->status = 'paid';
-                    $loan->save();
+                    $loan=$this->loanRepository->updateLoan($loan->id,['status'=>'paid']);
                 }
             } else{
                 return $this->handleError('Invalid amount, please add amount greater than or equal to '.$loanPayment->amount);     
