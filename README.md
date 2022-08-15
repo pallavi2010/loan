@@ -17,6 +17,7 @@ Laravel is accessible, powerful, and provides tools required for large, robust a
 Clone the repository and go to {application directory} directory<br>
 
 *git clone https://github.com/{username}/{repository name}.git<br>
+*latest code is on develop branch, so checkout to develop branch after cloning
 
 *cd {application directory}<br>
 *Generate .env file<br><br>
