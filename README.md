@@ -14,38 +14,38 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
 ## Run Locally
-Clone the repository and go to {application directory} directory
+Clone the repository and go to {application directory} directory<br>
 
-*git clone https://github.com/{username}/{repository name}.git
+*git clone https://github.com/{username}/{repository name}.git<br>
 
-*cd {application directory}
-*Generate .env file
+*cd {application directory}<br>
+*Generate .env file<br><br>
 
-*cp .env.example .env
-Then, configure the .env file according to your use case.
+*cp .env.example .env<br>
+Then, configure the .env file according to your use case.<br><br>
 
-Install the dependencies
-*composer install
+Install the dependencies<br>
+*composer install<br><br>
 
-Populate the tables to the database
-*php artisan migrate
+Populate the tables to the database<br>
+*php artisan migrate<br><br>
 
-Seed data to the dabase
-*php aritsan db:seed
+Seed data to the dabase<br>
+*php aritsan db:seed<br><br>
 
-Generate app key
-*php artisan key:generate
+Generate app key<br>
+*php artisan key:generate<br><br>
 
-Run the application
-*php artisan serve
+Run the application<br>
+*php artisan serve<br><br>
 
 ## Admin Credentials
-email: admin@gmail.com
-password: admin12345
+email: admin@gmail.com<br>
+password: admin12345<br><br>
 
 
 ### User Credentials
-email: user@gmail.com
-password: user12345
+email: user@gmail.com<br>
+password: user12345<br><br>
 
 
