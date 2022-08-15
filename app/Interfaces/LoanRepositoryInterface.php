@@ -3,7 +3,7 @@
 namespace App\Interfaces;
 
 interface LoanRepositoryInterface 
-{
+{ 
     public function getAll();
     public function getLoanById($loanid);
     public function createLoan(array $loanDetails);

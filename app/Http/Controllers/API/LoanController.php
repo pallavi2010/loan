@@ -127,7 +127,7 @@ class LoanController extends BaseController
 
         }
     }
-
+ 
     /**
       * Responds to requests to GET /loan/pay/{id}
    */

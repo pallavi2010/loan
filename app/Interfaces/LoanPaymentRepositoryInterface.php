@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Interfaces;
-
+ 
 interface LoanPaymentRepositoryInterface 
 {
     public function createLoanPayment(array $loanPaymentDetails);

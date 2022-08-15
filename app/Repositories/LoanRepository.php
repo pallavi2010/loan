@@ -28,7 +28,7 @@ class LoanRepository implements LoanRepositoryInterface
     {
         return Loan::create($loanDetails);
     }
-
+ 
     public function updateLoan($loanid, array $newDetails) 
     {
       
